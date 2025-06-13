@@ -1,0 +1,57 @@
+{
+    "app": {
+        "name": "RequestManager",
+        "version": "0.1.0",
+        "debug": false,
+        "host": "0.0.0.0",
+        "port": 8000
+    },
+    "database": {
+        "type": "mysql",
+        "host": "192.168.31.186",
+        "port": 3306,
+        "username": "root",
+        "password": "123456",
+        "database": "request_manager",
+        "charset": "utf8mb4",
+        "pool_size": 10,
+        "pool_timeout": 30,
+        "pool_recycle": 3600
+    },
+    "redis": {
+        "host": "192.168.31.186",
+        "port": 6378,
+        "db": 0,
+        "password": null
+    },
+    "security": {
+        "secret_key": "your-secret-key-here-change-in-production",
+        "algorithm": "HS256",
+        "access_token_expire_minutes": 30
+    },
+    "cors": {
+        "origins": [
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:5174"
+        ]
+    },
+    "scheduler": {
+        "default_timeout": 30,
+        "max_retry_attempts": 10,
+        "default_thread_count": 5,
+        "check_interval": 10
+    },
+    "proxy": {
+        "timeout": 30,
+        "rotation_enabled": true,
+        "fetch_interval": 30
+    },
+    "logging": {
+        "level": "WARNING",
+        "file": null,
+        "max_size": "10 MB",
+        "retention": "1 week"
+    }
+}

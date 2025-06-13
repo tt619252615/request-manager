@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RequestManager 前端测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+        }
+
+        .test-section h3 {
+            margin-top: 0;
+            color: #1890ff;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+
+        .status.error {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+
+        button:hover {
+            background: #40a9ff;
+        }
+
+        button:disabled {
+            background: #d9d9d9;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>RequestManager 前端功能测试</h1>
+        <p>这个页面用于快速测试前端与后端API的连接。</p>
+
+        <div class="test-section">
+            <h3>🔌 连接测试</h3>
+            <button onclick="testConnection()">测试后端连接</button>
+            <span id="connection-status"></span>
+            <div id="connection-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 任务统计</h3>
+            <button onclick="getTaskStats()">获取任务统计</button>
+            <span id="stats-status"></span>
+            <div id="stats-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 任务列表</h3>
+            <button onclick="getTasks()">获取任务列表</button>
+            <span id="tasks-status"></span>
+            <div id="tasks-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🌐 请求列表</h3>
+            <button onclick="getRequests()">获取请求列表</button>
+            <span id="requests-status"></span>
+            <div id="requests-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📥 导入测试</h3>
+            <button onclick="importFiddlerRequest()">导入Fiddler请求</button>
+            <span id="import-status"></span>
+            <div id="import-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+
+        function setStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${status}`;
+            element.textContent = message;
+        }
+
+        function showResult(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function testConnection() {
+            setStatus('connection-status', '', '测试中...');
+            try {
+                const response = await fetch(`${API_BASE}/tasks/stats/summary`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setStatus('connection-status', 'success', '连接成功');
+                    showResult('connection-result', data);
+                } else {
+                    setStatus('connection-status', 'error', `连接失败: ${response.status}`);
+                }
+            } catch (error) {
+                setStatus('connection-status', 'error', `连接失败: ${error.message}`);
+            }
+        }
+
+        async function getTaskStats() {
+            setStatus('stats-status', '', '获取中...');
+            try {
+                const response = await fetch(`${API_BASE}/tasks/stats/summary`);
+                const data = await response.json();
+                if (data.code === 0) {
+                    setStatus('stats-status', 'success', '获取成功');
+                    showResult('stats-result', data.data);
+                } else {
+                    setStatus('stats-status', 'error', `获取失败: ${data.message}`);
+                }
+            } catch (error) {
+                setStatus('stats-status', 'error', `获取失败: ${error.message}`);
+            }
+        }
+
+        async function getTasks() {
+            setStatus('tasks-status', '', '获取中...');
+            try {
+                const response = await fetch(`${API_BASE}/tasks/`);
+                const data = await response.json();
+                if (data.code === 0) {
+                    setStatus('tasks-status', 'success', `获取成功 (${data.data.length}条)`);
+                    showResult('tasks-result', data.data);
+                } else {
+                    setStatus('tasks-status', 'error', `获取失败: ${data.message}`);
+                }
+            } catch (error) {
+                setStatus('tasks-status', 'error', `获取失败: ${error.message}`);
+            }
+        }
+
+        async function getRequests() {
+            setStatus('requests-status', '', '获取中...');
+            try {
+                const response = await fetch(`${API_BASE}/requests/`);
+                const data = await response.json();
+                if (data.code === 0) {
+                    setStatus('requests-status', 'success', `获取成功 (${data.data.length}条)`);
+                    showResult('requests-result', data.data);
+                } else {
+                    setStatus('requests-status', 'error', `获取失败: ${data.message}`);
+                }
+            } catch (error) {
+                setStatus('requests-status', 'error', `获取失败: ${error.message}`);
+            }
+        }
+
+        async function importFiddlerRequest() {
+            setStatus('import-status', '', '导入中...');
+
+            const testRawData = `POST https://rights-apigw.meituan.com/api/rights/activity/secKill/grab HTTP/2
+host: rights-apigw.meituan.com
+content-type: application/json
+
+{"activityId":"A1930104757016543294","gdId":601664}`;
+
+            try {
+                const response = await fetch(`${API_BASE}/requests/import/fiddler`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        raw_data: testRawData,
+                        name: `测试请求-${Date.now()}`,
+                        description: '前端测试导入的请求'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.code === 0) {
+                    setStatus('import-status', 'success', '导入成功');
+                    showResult('import-result', data.data);
+                } else {
+                    setStatus('import-status', 'error', `导入失败: ${data.message}`);
+                    showResult('import-result', data);
+                }
+            } catch (error) {
+                setStatus('import-status', 'error', `导入失败: ${error.message}`);
+            }
+        }
+
+        // 页面加载时自动测试连接
+        window.onload = function () {
+            testConnection();
+        };
+    </script>
+</body>
+
+</html>
