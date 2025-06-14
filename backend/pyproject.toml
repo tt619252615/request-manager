@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "HTTP请求管理与调度系统"
 readme = "README.md"
 requires-python = ">=3.8"
+license = {text = "MIT"}
 authors = [
     {name = "RequestManager Team", email = "team@requestmanager.com"}
 ]
@@ -61,7 +62,7 @@ request-manager = "app.main:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["app*"]
+include = ["app*", "backend*"]
 
 [tool.black]
 line-length = 100

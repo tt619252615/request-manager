@@ -8,11 +8,15 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from loguru import logger
 import time
+from pathlib import Path
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
-from backend.app.config import settings, setup_logging
-from backend.app.database import create_database, create_tables
-from backend.app.schemas.response import error_response, ErrorCodes, BaseResponse
-from backend.app.services.scheduler_service import scheduler_service
+from .config import settings, setup_logging
+from .database import create_database, create_tables
+from .schemas.response import error_response, ErrorCodes, BaseResponse
+from .services.scheduler_service import scheduler_service
 
 
 @asynccontextmanager
@@ -109,12 +113,27 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     # 安全地提取错误信息，避免datetime序列化问题
     errors = []
     for error in exc.errors():
+        # 递归处理所有值，确保可以被JSON序列化
+        def safe_serialize(obj):
+            if hasattr(obj, 'isoformat'):  # datetime对象
+                return obj.isoformat()
+            elif isinstance(obj, (list, tuple)):
+                return [safe_serialize(item) for item in obj]
+            elif isinstance(obj, dict):
+                return {k: safe_serialize(v) for k, v in obj.items()}
+            else:
+                return str(obj)
+        
         error_dict = {
             "type": str(error.get("type", "")),
             "loc": list(error.get("loc", [])),
             "msg": str(error.get("msg", "")),
-            "input": str(error.get("input", ""))[:100]  # 限制长度避免过长
+            "input": safe_serialize(error.get("input", ""))
         }
+        # 限制输入长度
+        if isinstance(error_dict["input"], str) and len(error_dict["input"]) > 100:
+            error_dict["input"] = error_dict["input"][:100] + "..."
+        
         errors.append(error_dict)
     
     response_data = error_response(
@@ -124,7 +143,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=response_data.model_dump()
+        content=response_data.model_dump(mode='json')
     )
 
 
@@ -141,24 +160,39 @@ async def global_exception_handler(request: Request, exc: Exception):
     
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=response_data.model_dump()
+        content=response_data.model_dump(mode='json')
     )
-
-
-@app.get("/", response_model=BaseResponse[dict])
-async def root():
-    """根路径"""
-    return BaseResponse(
-        code=0,
-        data={
-            "name": settings.app_name,
-            "version": settings.app_version,
-            "status": "running",
-            "scheduler_status": "running" if scheduler_service.running else "stopped",
-            "database_type": settings.database_url.split('://')[0]
-        },
-        message="RequestManager API is running"
+DEV_FRONTEND_PATH = Path(
+    os.getenv(
+        "BACKEND_FRONTEND",
+        str(Path(__file__).parent.parent.parent / "frontend" / "dist"),
     )
+)
+logger.info(f"DEV_FRONTEND_PATH: {DEV_FRONTEND_PATH}")
+app.mount("/assets", StaticFiles(directory=DEV_FRONTEND_PATH / "assets", html=True))
+
+@app.get("/cloudtrace.svg")
+async def serve_icon():
+    return FileResponse(DEV_FRONTEND_PATH / "vite.svg")
+
+@app.get("/")
+async def serve_ui():
+    return FileResponse(DEV_FRONTEND_PATH / "index.html")
+
+# @app.get("/", response_model=BaseResponse[dict])
+# async def root():
+#     """根路径"""
+#     return BaseResponse(
+#         code=0,
+#         data={
+#             "name": settings.app_name,
+#             "version": settings.app_version,
+#             "status": "running",
+#             "scheduler_status": "running" if scheduler_service.running else "stopped",
+#             "database_type": settings.database_url.split('://')[0]
+#         },
+#         message="RequestManager API is running"
+#     )
 
 
 @app.get("/health", response_model=BaseResponse[dict])
@@ -232,5 +266,18 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=settings.debug,
+        log_level=settings.log_level.lower(),
+    )
+
+
+def main():
+    """主入口函数"""
+    import uvicorn
+    
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False,  # 打包后不需要重载
         log_level=settings.log_level.lower(),
     ) 

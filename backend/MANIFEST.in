@@ -1,0 +1,57 @@
+# MANIFEST.in - 指定打包时包含的额外文件
+
+# 包含文档文件
+include README.md
+include LICENSE
+include CHANGELOG.md
+
+# 包含配置文件
+include *.json
+include *.yaml
+include *.yml
+include *.toml
+include *.ini
+include *.cfg
+
+# 包含requirements文件
+include requirements*.txt
+include pyproject.toml
+
+# 包含数据库相关文件
+recursive-include alembic *.py
+recursive-include alembic *.mako
+recursive-include alembic *.ini
+include alembic.ini
+
+# 包含应用配置文件
+recursive-include app/config *.json
+recursive-include app/config *.yaml
+recursive-include app/config *.yml
+
+# 包含静态文件（如果有）
+recursive-include app/static *
+recursive-include app/templates *
+
+# 包含测试文件
+recursive-include tests *.py
+
+# 排除不需要的文件
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude .DS_Store
+global-exclude *.so
+global-exclude .git*
+global-exclude .pytest_cache
+
+# 排除IDE配置文件
+global-exclude .vscode
+global-exclude .idea
+global-exclude *.swp
+global-exclude *.swo
+
+# 排除构建产物
+global-exclude build
+global-exclude dist
+global-exclude *.egg-info 
